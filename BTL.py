@@ -1,6 +1,6 @@
 import sys
 import pandas as pd
-from FP_growth import create_tree, mine_fp_tree
+from FP_growth import create_tree, mine_fp_tree, generate_association_rules
 
 # Ép terminal hiển thị tiếng Việt để tránh lỗi charmap
 sys.stdout.reconfigure(encoding='utf-8')
@@ -51,38 +51,88 @@ def main():
     dataset = transactions_series.tolist()
     print(f"-> Đã tạo xong {len(dataset)} giỏ hàng.")
 
+    # ... (Phần 1, 2, 3: Đọc file và chuẩn bị 'dataset' giữ nguyên như cũ) ...
+    
     print("4. Khởi chạy thuật toán FP-Growth...")
-    # Thiết lập min_support thấp (ví dụ: cần xuất hiện ít nhất 2 lần)
     MIN_SUP = 2
     MAX_LEN = 3
+    TOTAL_TRANSACTIONS = len(dataset)
     
     print(f"-> Dựng cây FP-Tree với min_support = {MIN_SUP}...")
     fp_tree, header_table = create_tree(dataset, min_support=MIN_SUP)
 
-    frequent_itemsets = []
+    # VẼ CÂY: Hiển thị một phần cây ra màn hình để quan sát (Giới hạn độ sâu 3 tầng)
+    if fp_tree is not None:
+        print("\n--- CẤU TRÚC CÂY FP-TREE (RÚT GỌN 3 TẦNG) ---")
+        fp_tree.display_tree(max_depth=10)
+        print("-------------------------------------------\n")
+
+    # SỬA ĐỔI: frequent_itemsets giờ là DICTIONARY
+    frequent_itemsets_dict = {}
+    
     if fp_tree is not None:
         print(f"-> Khai phá tập phổ biến (giới hạn độ dài max_len = {MAX_LEN})...")
-        mine_fp_tree(fp_tree, header_table, MIN_SUP, set([]), frequent_itemsets, max_len=MAX_LEN)
+        mine_fp_tree(fp_tree, header_table, MIN_SUP, set([]), frequent_itemsets_dict, max_len=MAX_LEN)
     
-    print(f"-> Thuật toán hoàn tất! Tổng cộng tạo ra {len(frequent_itemsets)} tập phổ biến.")
+    print(f"-> Hoàn tất! Tìm thấy {len(frequent_itemsets_dict)} tập phổ biến.")
 
-    print("\n5. LỌC KẾT QUẢ: Các tập phổ biến CHỨA SẢN PHẨM Ế để làm Combo:")
-    # Lọc ra các tập phổ biến có ít nhất 2 sản phẩm VÀ chứa ít nhất 1 sản phẩm ế
-    combo_candidates = [
-        itemset for itemset in frequent_itemsets 
-        if len(itemset) >= 2 and not set(itemset).isdisjoint(target_products_set)
-    ]
-
-    if len(combo_candidates) > 0:
-        print(f"-> TÌM THẤY {len(combo_candidates)} COMBO TIỀM NĂNG!")
-        # In ra 10 combo đầu tiên để kiểm tra
-        for i, combo in enumerate(combo_candidates[:10], 1):
-            print(f"   Combo {i}: {list(combo)}")
-        if len(combo_candidates) > 10:
-            print("   ... (còn tiếp)")
+    # =========================================================
+    # BƯỚC 5: RẼ NHÁNH TOÁN HỌC - SINH 2 BỘ LUẬT ĐỘC LẬP
+    # =========================================================
+    
+    print("\n" + "="*50)
+    print(" LUỒNG 1: SẮP XẾP TỐI ƯU GIAN HÀNG (LIÊN KẾT TỰ NHIÊN) ")
+    print("="*50)
+    # Dùng ngưỡng Confidence cao (VD: 10%) để lọc các tương tác tự nhiên, chắc chắn
+    layout_rules = generate_association_rules(frequent_itemsets_dict, TOTAL_TRANSACTIONS, min_confidence=0.1)
+    
+    # Chỉ lấy các cặp có độ đẩy (Lift) > 1.2
+    strong_layout = [r for r in layout_rules if r['lift'] > 1.2]
+    strong_layout.sort(key=lambda x: x['lift'], reverse=True)
+    
+    if strong_layout:
+        for i, rule in enumerate(strong_layout[:5], 1):
+            ant = " + ".join(rule['antecedent'])
+            con = " + ".join(rule['consequent'])
+            print(f"[{i}] Cạnh kệ [{ant}] NÊN ĐẶT [{con}]")
+            print(f"    ↳ Lift: {rule['lift']:.2f} | Confidence: {rule['confidence']*100:.1f}%")
     else:
-        print("-> Không tìm thấy tổ hợp nào chứa sản phẩm ế đạt đủ mức min_support.")
-        print("-> Gợi ý: Thử giảm MIN_SUP xuống thấp hơn (ví dụ: 3 hoặc 2).")
+        print("Không có quy luật đủ mạnh để tối ưu gian hàng.")
 
+    print("\n" + "="*50)
+    print(" LUỒNG 2: THIẾT KẾ COMBO (LIÊN KẾT NHÂN TẠO) ")
+    print("="*50)
+    # Bước tinh tế: Tạo ra danh sách KEY chứa các tập phổ biến có dính tới hàng ế (để duyệt)
+    combo_itemsets_keys = [
+        itemset for itemset in frequent_itemsets_dict.keys()
+        if not set(itemset).isdisjoint(target_products_set)
+    ]
+    
+    # Sinh luật với ngưỡng Confidence cực thấp (VD: 0.1% = 0.001) để vớt mọi mỏ neo (chim mồi)
+    # Lưu ý truyển tử điển gốc frequent_itemsets_dict và keys cần duyệt combo_itemsets_keys
+    combo_rules = generate_association_rules(
+        frequent_itemsets_dict, 
+        TOTAL_TRANSACTIONS, 
+        min_confidence=0.001, 
+        target_itemsets=combo_itemsets_keys
+    )
+    
+    # Sắp xếp theo Confidence từ cao xuống thấp
+    combo_rules.sort(key=lambda x: x['confidence'], reverse=True)
+
+    if combo_rules:
+        # Giới hạn in ra 10 combo khả thi nhất
+        for i, rule in enumerate(combo_rules[:10], 1):
+            ant = " + ".join(rule['antecedent'])
+            con = " + ".join(rule['consequent'])
+            
+            is_ant_target = any(item in target_products_set for item in rule['antecedent'])
+            note = "(Mồi bằng đồ ế)" if is_ant_target else "(Khách mua đồ Hot -> Mời mua đồ Ế)"
+            
+            print(f"[{i}] COMBO {note}: Khách mua [{ant}] => Mời mua [{con}]")
+            print(f"    ↳ Tỷ lệ tự nhiên (Conf): {rule['confidence']*100:.2f}% | Lực đẩy gốc (Lift): {rule['lift']:.2f}")
+    else:
+        print("Không tìm thấy tổ hợp nào có thể dùng làm combo.")
+        
 if __name__ == "__main__":
-    main()
+   main()
