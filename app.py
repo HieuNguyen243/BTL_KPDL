@@ -109,25 +109,21 @@ if btn_run:
                 df_merged = pd.merge(df_sales_clean, df_products_clean, on='product_key', how='inner')
                 
                 # BƯỚC 2: Hàng Ế
-                st.write("2/4: Phân tích Tốc độ Bán Hàng & Tìm Hàng Tồn (Chậm luân chuyển)...")
+                st.write("2/4: Phân tích Tổng sản lượng bán thấp nhất & Tìm Hàng Tồn (Chậm luân chuyển)...")
                 product_stats = df_merged.groupby('product_name').agg(
-                    total_sold=('quantity', 'sum'),
-                    first_sold_date=('order_date', 'min'),
-                    last_sold_date=('order_date', 'max')
+                    total_sold=('quantity', 'sum')
                 ).reset_index()
                 
-                product_stats['days_active'] = (product_stats['last_sold_date'] - product_stats['first_sold_date']).dt.days + 1
-                product_stats['sales_per_day'] = product_stats['total_sold'] / product_stats['days_active']
                 product_stats = pd.merge(product_stats, df_products_clean[['product_name', 'profit_margin']].drop_duplicates(), on='product_name', how='inner')
                 
-                velocity_threshold = product_stats['sales_per_day'].quantile(0.15)
+                volume_threshold = product_stats['total_sold'].quantile(0.15)
                 margin_threshold = 0.40 
                 
-                target_mask = (product_stats['sales_per_day'] <= velocity_threshold) & (product_stats['profit_margin'] >= margin_threshold)
+                target_mask = (product_stats['total_sold'] <= volume_threshold) & (product_stats['profit_margin'] >= margin_threshold)
                 target_products_set = set(product_stats[target_mask]['product_name'].tolist())
                 
                 if not target_products_set:
-                    st.success("🌟 Tín hiệu tốt: Không có 'Hàng Ế' (Lãi >= 40% mà bán rất chậm) nào trong kỳ này. Hệ thống sẽ tối ưu bộ nhớ bằng cách tự động bỏ qua Luồng Tìm Combo.")
+                    st.success("🌟 Tín hiệu tốt: Không có 'Hàng Ế' (Lãi >= 40% mà Tổng sản lượng bán thấp nhất) nào trong kỳ này. Hệ thống sẽ tối ưu bộ nhớ bằng cách tự động bỏ qua Luồng Tìm Combo.")
                 
                 # BƯỚC 3: Dựng cây FP-Tree
                 st.write(f"3/4: Khởi tạo Thuật toán FP-Growth (Min Support = {min_sup}, Max Length = 3)...")
