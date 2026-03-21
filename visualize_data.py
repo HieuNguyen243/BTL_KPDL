@@ -199,8 +199,8 @@ def plot_cooccurrence_sparsity(df_merged, product_stats):
     plt.tight_layout()
 
 if __name__ == "__main__":
-    sales_file = "sales_202603191558.csv"
-    products_file = "products_202603191559.csv"
+    sales_file = "dataset/sales_202603191558.csv"
+    products_file = "dataset/products_202603191559.csv"
     
     sys.stdout.reconfigure(encoding='utf-8')
     setup_matplotlib_style()
