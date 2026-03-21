@@ -47,13 +47,10 @@ python visualize_data.py
 ```
 *(Lưu ý: Bạn phải đóng cửa sổ hiển thị Chart n-1 thì Chart n mới phóng lên)*.
 
-### Bước 3: Khởi Động Động Cơ Ứng Dụng (Dành cho Users)
-Mở Web App và trực tiếp thao tác (không cần biết code):
-```bash
-streamlit run app.py
-```
-Ngay sau đó, trang web sẽ kích nổ mặc định tại địa chỉ: `http://localhost:8501`. 
-Hãy nạp dữ liệu File `.csv` tại thanh công cụ màu xám bên trái và bấm **🚀 KHỞI CHẠY THUẬT TOÁN**!
+### Bước 3: Truy cập trang web tại đường link
+
+https://khaiphadulieu-nhom4.streamlit.app/
+
 
 ---
 
