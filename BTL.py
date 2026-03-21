@@ -8,10 +8,10 @@ sys.stdout.reconfigure(encoding='utf-8')
 def main():
     print("1. Đang nạp và làm sạch dữ liệu...")
     try:
-        df_sales = pd.read_csv("sales_202603191558.csv")
-        df_products = pd.read_csv("products_202603191559.csv")
+        df_sales = pd.read_csv("dataset/sales_202603191558.csv")
+        df_products = pd.read_csv("dataset/products_202603191559.csv")
     except FileNotFoundError:
-        print("LỖI: Không tìm thấy file CSV. Hãy đảm bảo 2 file CSV nằm cùng thư mục với BTL.py")
+        print("LỖI: Không tìm thấy file CSV. Hãy đảm bảo 2 file CSV nằm trong thư mục 'dataset'")
         return
 
     # Tiền xử lý Sales
