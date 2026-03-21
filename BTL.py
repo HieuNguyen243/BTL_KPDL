@@ -26,25 +26,21 @@ def main():
     # Tích hợp dữ liệu
     df_merged = pd.merge(df_sales_clean, df_products_clean, on='product_key', how='inner')
 
-    print("2. Đang phân tích Tốc độ bán hàng để tìm 'Sản phẩm ế'...")
+    print("2. Đang phân tích Tổng sản lượng bán thấp nhất để tìm 'Sản phẩm ế'...")
     product_stats = df_merged.groupby('product_name').agg(
-        total_sold=('quantity', 'sum'),
-        first_sold_date=('order_date', 'min'),
-        last_sold_date=('order_date', 'max')
+        total_sold=('quantity', 'sum')
     ).reset_index()
 
-    product_stats['days_active'] = (product_stats['last_sold_date'] - product_stats['first_sold_date']).dt.days + 1
-    product_stats['sales_per_day'] = product_stats['total_sold'] / product_stats['days_active']
     product_stats = pd.merge(product_stats, df_products_clean[['product_name', 'profit_margin']].drop_duplicates(), on='product_name', how='inner')
 
     # Thiết lập ngưỡng và gắn nhãn mục tiêu
-    velocity_threshold = product_stats['sales_per_day'].quantile(0.15)
+    volume_threshold = product_stats['total_sold'].quantile(0.15)
     margin_threshold = 0.40 
     
-    product_stats['is_target_combo'] = (product_stats['sales_per_day'] <= velocity_threshold) & (product_stats['profit_margin'] >= margin_threshold)
+    product_stats['is_target_combo'] = (product_stats['total_sold'] <= volume_threshold) & (product_stats['profit_margin'] >= margin_threshold)
     
     target_products_set = set(product_stats[product_stats['is_target_combo']]['product_name'].tolist())
-    print(f"-> Tìm thấy {len(target_products_set)} sản phẩm bán chậm có lợi nhuận cao (>= 40%).")
+    print(f"-> Tìm thấy {len(target_products_set)} sản phẩm có tổng lượng bán thấp nhất và lợi nhuận cao (>= 40%).")
 
     print("3. Đang chuyển đổi dữ liệu sang dạng Giỏ hàng (Transactions)...")
     transactions_series = df_merged.groupby('order_number')['product_name'].apply(list)
