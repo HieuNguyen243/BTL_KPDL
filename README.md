@@ -1,4 +1,4 @@
-# 🛒 Ứng dụng AI Phân tích Giỏ hàng Bán lẻ (Market Basket Analysis)
+# 🛒 Ứng dụng luật kết hợp trong Phân tích Giỏ hàng Bán lẻ (Market Basket Analysis)
 
 Dự án này là một hệ thống khai phá dữ liệu (Data Mining) ứng dụng giải thuật học máy Association Rules (**FP-Growth**) để phân tích hành vi mua sắm trong thương mại điện tử/siêu thị bán lẻ. Hệ thống đã được số hóa hoàn toàn từ các thuật toán phức tạp thành một nền tảng Web App tương tác mượt mà, sẵn sàng phục vụ cho các nhà Quản lý Chiến lược (Business Manager / Sales).
 
@@ -13,7 +13,7 @@ Hệ thống tập trung bóc tách Dữ liệu Giao dịch theo 2 "Điểm mù"
     *   *Ứng dụng:* Đặt hàng hóa lên gần nhau trên kệ siêu thị hoặc hệ thống AI Recommendation "Gợi ý mua cùng".
 
 *   **🎁 Luồng 2 - Thiết Kế Combo Giải Cứu Hàng Chậm Luân Chuyển**
-    *   Truy lùng tận gốc những ngách sản phẩm có **Lãi Rất Lớn (>= 40%)** nhưng lọt lưới thảm họa **Tốc độ bán cực thấp (Bottom 15%)**.
+    *   Truy lùng tận gốc những ngách sản phẩm có **Lãi Rất Lớn (>= 40%)** nhưng lọt lưới thảm họa **sản lượng bán cực thấp (Bottom 15%)**.
     *   Ép máy học (Machine) đẩy `Min Confidence` về sát đáy mốc `0.001` - ép nó tìm ra những điểm neo nối Sản phẩm Hot (Hàng Tốt) sang Sản phẩm Ế (Hàng Mục Tiêu).
     *   *Ứng dụng:* Làm chương trình khuyến mãi mua Hàng Đầu Kéo - Tặng kèm thẻ giảm giá mua Hàng Kẹt Kho! Đẩy doanh thu Lãi Lớn lên nhanh nhất có thể.
 

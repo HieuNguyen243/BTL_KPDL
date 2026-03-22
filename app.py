@@ -12,7 +12,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# KHỞI TẠO SESSION STATE CHỐNG MẤT DỮ LIỆU KHI RERUN (Xử lý Input)
 if 'df_layout' not in st.session_state:
     st.session_state['df_layout'] = None
 if 'df_combo' not in st.session_state:
@@ -140,13 +139,11 @@ if btn_run:
                 # BƯỚC 4: Rẽ nhánh Bài toán và Lưu SESSION_STATE
                 st.write("4/4: Trích xuất Luật Kết Hợp và Lọc nhiễu theo Ngưỡng Confidence...")
                 
-                # Luồng 1
                 layout_rules_raw = generate_association_rules(frequent_itemsets_dict, TOTAL_TRANSACTIONS, min_confidence=min_conf_layout)
                 layout_rules = [r for r in layout_rules_raw if r['lift'] > 1.2]
                 layout_rules.sort(key=lambda x: x['lift'], reverse=True)
-                st.session_state['df_layout'] = format_rules(layout_rules) # Gán vào Session_state
+                st.session_state['df_layout'] = format_rules(layout_rules)
                 
-                # Luồng 2
                 if target_products_set:
                     combo_itemsets_keys = [
                         itemset for itemset in frequent_itemsets_dict.keys()
@@ -160,7 +157,7 @@ if btn_run:
                         target_itemsets=combo_itemsets_keys
                     )
                     combo_rules_raw.sort(key=lambda x: x['confidence'], reverse=True)
-                    st.session_state['df_combo'] = format_rules(combo_rules_raw, target_products_set) # Gán vào Session_state
+                    st.session_state['df_combo'] = format_rules(combo_rules_raw, target_products_set)
                 else:
                     st.session_state['df_combo'] = pd.DataFrame() 
 
@@ -176,7 +173,6 @@ if btn_run:
 # ==========================================
 # 5. KHỐI HIỂN THỊ KẾT QUẢ ĐỘC LẬP (LẤY TỪ STATE)
 # ==========================================
-# Khối chặn này sẽ luôn render nếu df_layout đã từng được tính toán -> Search gõ thoải mái không mất bảng
 if st.session_state['df_layout'] is not None:
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📊 Báo cáo Khuyến nghị từ Trí tuệ Nhân tạo")
