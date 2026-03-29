@@ -1,57 +1,57 @@
-# 🛒 Ứng dụng luật kết hợp trong Phân tích Giỏ hàng Bán lẻ (Market Basket Analysis)
+# 🛒 Ứng dụng luật kết hợp trong Phân tích Giỏ hàng Bán lẻ
 
-Dự án này là một hệ thống khai phá dữ liệu (Data Mining) ứng dụng giải thuật học máy Association Rules (**FP-Growth**) để phân tích hành vi mua sắm trong thương mại điện tử/siêu thị bán lẻ. Hệ thống đã được số hóa hoàn toàn từ các thuật toán phức tạp thành một nền tảng Web App tương tác mượt mà, sẵn sàng phục vụ cho các nhà Quản lý Chiến lược (Business Manager / Sales).
-
----
-
-## 📌 1. Các Tính Năng Cốt Lõi (Core Features)
-
-Hệ thống tập trung bóc tách Dữ liệu Giao dịch theo 2 "Điểm mù" của giới phân tích thị trường:
-
-*   **🏪 Luồng 1 - Tối ưu Không Gian Kệ Hàng (Natural Layout)**
-    *   Tự động phát hiện các tập sản phẩm BỔ TRỢ MUA CHUNG với tần suất cực kỳ tự nhiên. Mức Lift nội bộ cấu hình khắt khe `> 1.2` (Chắc chắn hơn mua rời).
-    *   *Ứng dụng:* Đặt hàng hóa lên gần nhau trên kệ siêu thị hoặc hệ thống AI Recommendation "Gợi ý mua cùng".
-
-*   **🎁 Luồng 2 - Thiết Kế Combo Giải Cứu Hàng Chậm Luân Chuyển**
-    *   Truy lùng tận gốc những ngách sản phẩm có **Lãi Rất Lớn (>= 40%)** nhưng lọt lưới thảm họa **sản lượng bán cực thấp (Bottom 15%)**.
-    *   Ép máy học (Machine) đẩy `Min Confidence` về sát đáy mốc `0.001` - ép nó tìm ra những điểm neo nối Sản phẩm Hot (Hàng Tốt) sang Sản phẩm Ế (Hàng Mục Tiêu).
-    *   *Ứng dụng:* Làm chương trình khuyến mãi mua Hàng Đầu Kéo - Tặng kèm thẻ giảm giá mua Hàng Kẹt Kho! Đẩy doanh thu Lãi Lớn lên nhanh nhất có thể.
+Dự án này là một ứng dụng hỗ trợ phân tích dữ liệu giỏ hàng bán lẻ, sử dụng thuật toán FP-Growth để tìm ra các quy luật mua sắm của khách hàng. Mục tiêu là giúp chủ cửa hàng đưa ra quyết định tốt hơn trong việc sắp xếp hàng hóa và tạo các chương trình khuyến mãi chéo (mua sản phẩm này gợi ý thêm sản phẩm khác).
 
 ---
 
-## 📂 2. Cấu Trúc Mã Nguồn (Architecture)
+## 📌 1. Các Tính Năng Cốt Lõi
 
-1.  **`app.py`**: Trái tim của ứng dụng. Phần mềm giao diện dựng bằng **Streamlit** mạnh mẽ, xử lý State Management siêu ưu việt. Cho phép người dùng trực tiếp tinh chỉnh *Min Support*, *Min Confidence*, *Upfile CSV* và Search luật sinh.
-2.  **`FP_growth.py`**: Lõi não bộ. Được thiết kế thủ công toàn bộ bằng OOP (Không dùng thư viện mì ăn liền). Xây dựng một luồng kiến trúc Cây *Frequent Pattern Tree*, duyệt sâu tìm Luật.
-3.  **`visualize_data.py`**: Trình Khám phá số liệu (Data Insight Visualization) bằng Pandas / Seaborn. Vẽ ra các mảng *Nghịch lý Thanh Khoản*, *Sparsity (Khoảng Trống Ma Trận)* phân tích nguyên nhân tại sao máy học gặp khó khăn với bài toán bán lẻ.
-4.  **`BTL.py`**: Bản mô phỏng dòng lệnh (Console). Tốc độ cao nhưng phục vụ cho Kỹ sư phân tích thuật toán đằng sau.
-5.  **`sales.csv` & `products.csv`**: Bộ dữ liệu mẫu bắt buộc cho hệ thống.
+Hệ thống cung cấp hai luồng phân tích chính dựa trên dữ liệu giao dịch:
+
+*   **🏪 Luồng 1 - Gợi ý Xếp Kệ Hàng (Gom nhóm theo Danh mục phụ / Subcategory)**
+    *   Thuật toán quét qua các giỏ hàng để tìm các nhóm danh mục phụ thường được khách hàng mua cùng nhau nhất.
+    *   Hệ thống dùng chỉ số Lift (mức độ tương quan thực tế) > 1.2 để đảm bảo các danh mục này thực sự có liên kết tự nhiên chứ không phải ngẫu nhiên.
+    *   *Ứng dụng:* Giúp cửa hàng biết nên đặt các kệ hàng nào gần nhau để tăng doanh số dắt dây.
+
+*   **🎁 Luồng 2 - Gợi ý Combo Chéo (Gom nhóm theo Tên sản phẩm / Product Name)**
+    *   Đầu tiên, hệ thống sẽ lọc ra các "sản phẩm ế" - là những món hàng bán rất chậm (thuộc nhóm 15% thấp nhất) nhưng lại có biên lợi nhuận cao (từ 40% trở lên).
+    *   Sau đó, hệ thống tìm kiếm những sản phẩm bán chạy (hot) thường xuất hiện chung trong giỏ hàng với các món ế này.
+    *   *Ứng dụng:* Giúp cửa hàng đóng gói combo: Mua sản phẩm Hot tặng kèm/giảm giá sản phẩm ế để đẩy hàng tồn kho cục bộ mà vẫn thu về mức lợi nhuận tốt.
 
 ---
 
-## 🚀 3. Hướng Dẫn Vận Hành (How to run)
+## 📂 2. Cấu Trúc Mã Nguồn
 
-Đảm bảo máy của bạn đã cài đặt Python 3.9 trở lên.
+1.  **`app.py`**: Giao diện chính trên web được xây dựng bằng Streamlit. Tại đây, bạn có thể tải lên file dữ liệu (`.csv`) và điều chỉnh các thanh kéo (slider) như mức Min Support (số nhóm/giỏ hàng tối thiểu) hay Min Confidence (độ tin cậy) để xem kết quả Gợi ý xếp kệ và Gợi ý combo thay đổi trực quan.
+2.  **`FP_growth.py`**: Chứa mã nguồn cài đặt thuật toán FP-Growth tự viết (không dùng thư viện có sẵn). File này làm nhiệm vụ chính yếu là dựng cây FP-Tree và rút trích ra các luật kết hợp.
+3.  **`BTL.py`**: Phiên bản chạy thẳng thuật toán qua dòng lệnh (console). Giúp lập trình viên in ra các log chi tiết của từng bước chạy thuật toán để dễ dàng gỡ lỗi hoặc kiểm thử trước khi ráp lên web.
+4.  **`visualize_data.py`**: Chứa các đoạn mã vẽ biểu đồ bằng Pandas và Seaborn. Dùng để sinh ra các biểu đồ thống kê mô tả tình trạng các nhóm hàng bán chậm từ dữ liệu đầu vào.
+5.  **Dữ liệu mẫu**: Gồm cặp tập tin mẫu định dạng `csv` (ví dụ: `sales_*.csv` và `products_*.csv`) dùng làm đầu vào minh họa cho phân tích.
 
-### Bước 1: Cài đặt thư viện môi trường ngầm
-Mở Terminal ở thư mục dự án này, gõ lệnh cài đặt mọi tiện ích liên quan. Hệ thống khai phá dùng `pandas`,`matplotlib`,`seaborn`, và `streamlit`:
+---
+
+## 🚀 3. Hướng Dẫn Vận Hành
+
+Bạn cần cài đặt sẵn Python trên máy tính của mình (khuyên dùng Python phiên bản 3.9 trở lên).
+
+### Bước 1: Cài đặt thư viện yêu cầu
+Mở Terminal / Command Prompt ngay tại thư mục chứa dự án này và thi hành lệnh sau để tải về các gói tiện ích dùng cho phân tích (`pandas`, `matplotlib`, `seaborn`, `streamlit`):
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Bước 2: Khám Phá Data (Dành cho Data Analyst) - *Tùy chọn*
-Xem các Chart trực quan giải thích sự phân cực của Hàng Ế (Long tail phenomenon) và Không gian Hố Đen bằng mã:
+### Bước 2: Xem các biểu đồ tổng quan (Dành cho người phân tích số liệu)
+Nếu bạn muốn theo dõi đồ thị hiện trạng các mặt hàng tồn kho, hãy gõ:
 ```bash
 python visualize_data.py
 ```
-*(Lưu ý: Bạn phải đóng cửa sổ hiển thị Chart n-1 thì Chart n mới phóng lên)*.
+*(Lưu ý: Nếu một biểu đồ hiện ra, bạn cần tắt khung cửa sổ của biểu đồ đó đi thì chương trình mới chạy tiếp để hiển thị biểu đồ tiếp theo).*
 
-### Bước 3: Truy cập trang web tại đường link
+### Bước 3: Chạy giao diện Website Phân tích Nội bộ
+Để kích hoạt ứng dụng giao diện web trực tiếp trên máy của bạn, hãy chạy lệnh:
+```bash
+streamlit run app.py
+```
 
-https://khaiphadulieu-nhom4.streamlit.app/
-
-
----
-
-💡 **Project được rèn tạo dành riêng cho Bài Toán Quản Lý Hiệu Năng Bán Lẻ.**
+Một tab mới trên trình duyệt sẽ tự động mở lên. Căn cứ theo đó, bạn có thể tự mình điều chỉnh các khoảng tham số bên thanh cấu hình (sidebar) để nhận Gợi ý phân bổ kệ hàng mới nhất.

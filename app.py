@@ -32,16 +32,22 @@ with st.sidebar:
     st.markdown("---")
     st.header("⚙️ Cấu hình Siêu tham số (Hyperparameters)")
     
-    min_sup = st.slider(
-        "Min Support (Số lần xuất hiện):", 
-        min_value=2, max_value=20, value=5, step=1,
-        help="Yêu cầu hệ thống chỉ lấy các tập hợp mặt hàng xuất hiện ít nhất X lần trong toàn bộ Giỏ hàng."
+    min_sup_layout = st.slider(
+        "Min Support - Xếp Kệ (Subcategory):", 
+        min_value=5, max_value=100, value=40, step=5,
+        help="Số lần xuất hiện tối thiểu của danh mục để được phân tích xếp kệ."
+    )
+
+    min_sup_combo = st.slider(
+        "Min Support - Combo (Product):", 
+        min_value=2, max_value=50, value=2, step=1,
+        help="Số lần xuất hiện tối thiểu của sản phẩm để kết hợp combo."
     )
 
     min_conf_layout = st.slider(
         "Min Conf - Luồng Xếp Kệ:", 
-        min_value=0.05, max_value=0.50, value=0.10, step=0.01,
-        help="Độ tin cậy tối thiểu cho việc tìm quy luật khách hàng tự nhiên mua kèm các món hàng."
+        min_value=0.01, max_value=0.50, value=0.01, step=0.01,
+        help="Độ tin cậy tối thiểu cho việc tìm quy luật khách hàng tự nhiên mua kèm các danh mục."
     )
 
     min_conf_combo = st.slider(
@@ -57,7 +63,7 @@ with st.sidebar:
 # ==========================================
 # 3. HÀM TIỆN ÍCH (HELPER FUNCTIONS)
 # ==========================================
-def format_rules(rules_list, target_products_set=None):
+def format_rules(rules_list, rule_type="layout", target_products_set=None):
     """
     Format mảng Dict các luật sinh ra thành DataFrame chuẩn hóa để render Web.
     """
@@ -76,9 +82,15 @@ def format_rules(rules_list, target_products_set=None):
             "Lift": round(rule['lift'], 2)
         }
         
-        if target_products_set is not None:
-            is_ant_target = any(item in target_products_set for item in rule['antecedent'])
-            row_data["Chiến lược P/p"] = "Mồi bằng đồ Ế" if is_ant_target else "Khách mua Hot -> Mời thêm đồ Ế"
+        if rule_type == "layout":
+            row_data["Support (%)"] = f"{rule['support'] * 100:.2f}%"
+            if 'score' in rule:
+                row_data["Score"] = round(rule['score'], 4)
+        elif rule_type == "combo":
+            if 'combo_score' in rule:
+                row_data["Combo Score"] = round(rule['combo_score'], 4)
+            if target_products_set is not None:
+                row_data["Chiến lược P/p"] = "Khách mua Hot -> Mời thêm đồ Ế"
             
         formatted_data.append(row_data)
     
@@ -102,7 +114,7 @@ if btn_run:
                 df_sales['order_date'] = pd.to_datetime(df_sales['order_date'])
                 df_sales_clean = df_sales[df_sales['quantity'] > 0][['order_number', 'order_date', 'product_key', 'quantity']]
                 
-                df_products_clean = df_products[['product_key', 'product_name', 'category', 'unit_cost_usd', 'unit_price_usd']].copy()
+                df_products_clean = df_products[['product_key', 'product_name', 'subcategory', 'unit_cost_usd', 'unit_price_usd']].copy()
                 df_products_clean['profit_margin'] = (df_products_clean['unit_price_usd'] - df_products_clean['unit_cost_usd']) / df_products_clean['unit_price_usd']
                 
                 df_merged = pd.merge(df_sales_clean, df_products_clean, on='product_key', how='inner')
@@ -124,40 +136,79 @@ if btn_run:
                 if not target_products_set:
                     st.success("🌟 Tín hiệu tốt: Không có 'Hàng Ế' (Lãi >= 40% mà Tổng sản lượng bán thấp nhất) nào trong kỳ này. Hệ thống sẽ tối ưu bộ nhớ bằng cách tự động bỏ qua Luồng Tìm Combo.")
                 
-                # BƯỚC 3: Dựng cây FP-Tree
-                st.write(f"3/4: Khởi tạo Thuật toán FP-Growth (Min Support = {min_sup}, Max Length = 3)...")
-                transactions_series = df_merged.groupby('order_number')['product_name'].apply(list)
-                dataset = transactions_series.tolist()
-                TOTAL_TRANSACTIONS = len(dataset)
+                # =========================================================
+                # LUỒNG 1: SẮP XẾP TỐI ƯU GIAN HÀNG (LIÊN KẾT THEO SUBCATEGORY)
+                # =========================================================
+                st.write(f"3/4: Phân tích Luồng 1 - Gợi ý Xếp Kệ theo Subcategory (Min Support = {min_sup_layout})...")
                 
-                fp_tree, header_table = create_tree(dataset, min_support=min_sup)
+                transactions_subcats = df_merged.groupby('order_number')['subcategory'].apply(lambda x: list(set(x)))
+                dataset_flow1 = transactions_subcats.tolist()
+                TOTAL_TRANS_1 = len(dataset_flow1)
                 
-                frequent_itemsets_dict = {}
-                if fp_tree is not None:
-                    mine_fp_tree(fp_tree, header_table, min_sup, set([]), frequent_itemsets_dict, max_len=3)
+                fp_tree_1, header_table_1 = create_tree(dataset_flow1, min_support=min_sup_layout)
+                frequent_itemsets_dict_1 = {}
+                if fp_tree_1 is not None:
+                    mine_fp_tree(fp_tree_1, header_table_1, min_sup_layout, set([]), frequent_itemsets_dict_1, max_len=2)
                 
-                # BƯỚC 4: Rẽ nhánh Bài toán và Lưu SESSION_STATE
-                st.write("4/4: Trích xuất Luật Kết Hợp và Lọc nhiễu theo Ngưỡng Confidence...")
+                st.write("Đang trích xuất luật Xếp Kệ...")
+                flow1_rules_raw = generate_association_rules(frequent_itemsets_dict_1, TOTAL_TRANS_1, min_confidence=min_conf_layout)
                 
-                layout_rules_raw = generate_association_rules(frequent_itemsets_dict, TOTAL_TRANSACTIONS, min_confidence=min_conf_layout)
-                layout_rules = [r for r in layout_rules_raw if r['lift'] > 1.2]
-                layout_rules.sort(key=lambda x: x['lift'], reverse=True)
-                st.session_state['df_layout'] = format_rules(layout_rules)
+                valid_layout_rules = []
+                seen_layouts = set()
                 
+                for rule in flow1_rules_raw:
+                    if rule['lift'] > 1.2:
+                        combined_items = frozenset(rule['antecedent'] + rule['consequent'])
+                        if combined_items not in seen_layouts:
+                            seen_layouts.add(combined_items)
+                            rule['score'] = rule['support'] * rule['lift']
+                            valid_layout_rules.append(rule)
+                            
+                valid_layout_rules.sort(key=lambda x: x['score'], reverse=True)
+                st.session_state['df_layout'] = format_rules(valid_layout_rules, rule_type="layout")
+                
+                # =========================================================
+                # LUỒNG 2: THIẾT KẾ COMBO BÁN CHÉO (LIÊN KẾT THEO PRODUCT NAME)
+                # =========================================================
+                st.write(f"4/4: Phân tích Luồng 2 - Thiết kế Combo bán chéo (Min Support = {min_sup_combo})...")
                 if target_products_set:
+                    transactions_products = df_merged.groupby('order_number')['product_name'].apply(lambda x: list(set(x)))
+                    dataset_flow2 = transactions_products.tolist()
+                    TOTAL_TRANS_2 = len(dataset_flow2)
+                    
+                    fp_tree_2, header_table_2 = create_tree(dataset_flow2, min_support=min_sup_combo)
+                    frequent_itemsets_dict_2 = {}
+                    if fp_tree_2 is not None:
+                        mine_fp_tree(fp_tree_2, header_table_2, min_sup_combo, set([]), frequent_itemsets_dict_2, max_len=3)
+                    
+                    # Tối ưu hóa: lấy itemset chứa target_products
                     combo_itemsets_keys = [
-                        itemset for itemset in frequent_itemsets_dict.keys()
+                        itemset for itemset in frequent_itemsets_dict_2.keys()
                         if not set(itemset).isdisjoint(target_products_set)
                     ]
                     
-                    combo_rules_raw = generate_association_rules(
-                        frequent_itemsets_dict, 
-                        TOTAL_TRANSACTIONS, 
-                        min_confidence=min_conf_combo, 
+                    flow2_rules_raw = generate_association_rules(
+                        frequent_itemsets_dict_2, 
+                        TOTAL_TRANS_2, 
+                        min_confidence=min_conf_combo,
                         target_itemsets=combo_itemsets_keys
                     )
-                    combo_rules_raw.sort(key=lambda x: x['confidence'], reverse=True)
-                    st.session_state['df_combo'] = format_rules(combo_rules_raw, target_products_set)
+                    
+                    valid_combo_rules = []
+                    for rule in flow2_rules_raw:
+                        ant_set = set(rule['antecedent'])
+                        con_set = set(rule['consequent'])
+                        
+                        cond_ant = ant_set.isdisjoint(target_products_set)
+                        cond_con = not con_set.isdisjoint(target_products_set)
+                        cond_lift = rule['lift'] > 1.2
+                        
+                        if cond_ant and cond_con and cond_lift:
+                            rule['combo_score'] = rule['confidence'] * rule['lift']
+                            valid_combo_rules.append(rule)
+                            
+                    valid_combo_rules.sort(key=lambda x: x['combo_score'], reverse=True)
+                    st.session_state['df_combo'] = format_rules(valid_combo_rules, rule_type="combo", target_products_set=target_products_set)
                 else:
                     st.session_state['df_combo'] = pd.DataFrame() 
 

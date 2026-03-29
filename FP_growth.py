@@ -11,7 +11,6 @@ class TreeNode:
     def inc(self, num_occur):
         self.count += num_occur
 
-    # HÀM MỚI 1: Vẽ cây ra màn hình Console với đường kẻ nhánh rõ ràng
     def display_tree(self, prefix="", is_last=True, current_depth=1, max_depth=4):
         if current_depth == 1:
             print(f"[{self.name} : {self.count}]")
@@ -95,7 +94,6 @@ def find_prefix_path(base_pat, tree_node):
         tree_node = tree_node.node_link
     return cond_pats
 
-# CẬP NHẬT: frequent_itemsets giờ là Dictionary để lưu trữ cả tần suất (phục vụ tính toán Toán học)
 def mine_fp_tree(current_fp_tree, header_table, min_support, current_prefix, frequent_itemsets, max_len=3):
     if len(current_prefix) >= max_len:
         return
@@ -106,7 +104,6 @@ def mine_fp_tree(current_fp_tree, header_table, min_support, current_prefix, fre
         new_frequent_set = current_prefix.copy()
         new_frequent_set.add(current_item)
         
-        # Lưu Tên sản phẩm đi kèm với Tần suất (Count)
         frequent_itemsets[frozenset(new_frequent_set)] = header_table[current_item][0]
         
         if len(new_frequent_set) < max_len:
@@ -121,22 +118,19 @@ def mine_fp_tree(current_fp_tree, header_table, min_support, current_prefix, fre
             if conditional_header_table is not None:
                 mine_fp_tree(conditional_fp_tree, conditional_header_table, min_support, new_frequent_set, frequent_itemsets, max_len)
 
-# HÀM MỚI 2: Sinh Luật kết hợp từ Dictionary Tập Phổ Biến
 def generate_association_rules(frequent_itemsets_dict, total_transactions, min_confidence=0.5, target_itemsets=None):
     rules = []
     
-    # Duyệt trên tập thu gọn (nếu có), nếu không thì duyệt toàn bộ dict
+
     itemsets_to_check = target_itemsets if target_itemsets is not None else frequent_itemsets_dict.keys()
     
     for itemset in itemsets_to_check:
-        # Bỏ qua nếu itemset không tồn tại trong từ điển gốc (phòng lỗi logic)
         if itemset not in frequent_itemsets_dict:
             continue
             
         support_count_AB = frequent_itemsets_dict[itemset]
         
         if len(itemset) > 1:
-            # Tạo các tổ hợp (Tiền đề -> Hệ quả)
             for i in range(1, len(itemset)):
                 for antecedent in itertools.combinations(itemset, i):
                     antecedent_set = frozenset(antecedent)
@@ -153,7 +147,7 @@ def generate_association_rules(frequent_itemsets_dict, total_transactions, min_c
                             support_AB_ratio = support_count_AB / total_transactions
                             support_B_ratio = sup_count_B / total_transactions
                             
-                            # Tính Lift
+                            
                             lift = confidence / support_B_ratio
                             
                             rules.append({
