@@ -46,15 +46,16 @@ def main():
     transactions_subcats = df_merged.groupby('order_number')['subcategory'].apply(lambda x: list(set(x)))
     dataset_flow1 = transactions_subcats.tolist()
     TOTAL_TRANS_1 = len(dataset_flow1)
-    
-    # Chỉ xét những giỏ có từ 2 danh mục trở lên để debug
-    valid_baskets_1 = [t for t in dataset_flow1 if len(t) > 1]
-    print(f"-> [Debug] Số giỏ hàng danh mục hợp lệ (>= 2 subcategory): {len(valid_baskets_1)} / {TOTAL_TRANS_1}")
 
     MIN_SUP_1 = 40
     print(f"-> 1.2 Khởi chạy FP-Growth trên {TOTAL_TRANS_1} giỏ (min_support = {MIN_SUP_1})...")
     fp_tree_1, header_table_1 = create_tree(dataset_flow1, min_support=MIN_SUP_1)
     
+    if fp_tree_1 is not None:
+        print("\n-> [Debug] Cấu trúc FP-Tree Luồng 1:")
+        fp_tree_1.display_tree()
+        print()
+
     frequent_itemsets_dict_1 = {}
     if fp_tree_1 is not None:
         mine_fp_tree(fp_tree_1, header_table_1, MIN_SUP_1, set([]), frequent_itemsets_dict_1, max_len=2)
@@ -110,6 +111,11 @@ def main():
     print(f"-> 2.2 Khởi chạy FP-Growth trên {TOTAL_TRANS_2} giỏ (min_support = {MIN_SUP_2} - Vét cạn)...")
     fp_tree_2, header_table_2 = create_tree(dataset_flow2, min_support=MIN_SUP_2)
     
+    if fp_tree_2 is not None:
+        print("\n-> [Debug] Cấu trúc FP-Tree Luồng 2:")
+        fp_tree_2.display_tree(max_depth=3)
+        print()
+
     frequent_itemsets_dict_2 = {}
     if fp_tree_2 is not None:
         mine_fp_tree(fp_tree_2, header_table_2, MIN_SUP_2, set([]), frequent_itemsets_dict_2, max_len=3)
