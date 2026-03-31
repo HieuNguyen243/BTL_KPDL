@@ -89,8 +89,6 @@ def format_rules(rules_list, rule_type="layout", target_products_set=None):
         elif rule_type == "combo":
             if 'combo_score' in rule:
                 row_data["Combo Score"] = round(rule['combo_score'], 4)
-            if target_products_set is not None:
-                row_data["Chiến lược P/p"] = "Khách mua Hot -> Mời thêm đồ Ế"
             
         formatted_data.append(row_data)
     
@@ -226,7 +224,7 @@ if btn_run:
 # ==========================================
 if st.session_state['df_layout'] is not None:
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("📊 Báo cáo Khuyến nghị từ Trí tuệ Nhân tạo")
+    st.subheader("📊 Báo cáo Khuyến nghị")
     
     col_left, col_right = st.columns(2)
     
